@@ -1,4 +1,4 @@
-import type { Stop, BusRoute, Bus, SuggestedRoute } from '@/types';
+import type { Bus, BusRoute, Stop, SuggestedRoute } from '@/types';
 import { getDistance } from '@/lib/utils';
 
 export function findSuggestedRoutes({
@@ -66,32 +66,39 @@ export function findSuggestedRoutes({
         const originIndex1 = route1.stops.indexOf(originId);
         if (originIndex1 === -1) return;
 
-        route1.stops.slice(originIndex1 + 1).forEach(transferStopId => {
-            const transferStop = stops.find(s => s.id === transferStopId);
-            if (!transferStop) return;
+        routes.forEach(route2 => {
+            if (route1.id === route2.id) return;
 
-            routes.forEach(route2 => {
-                if (route1.id === route2.id) return;
+            // Find common transfer stops
+            const commonStopIds = route1.stops.filter(stopId => route2.stops.includes(stopId));
 
-                const transferIndex2 = route2.stops.indexOf(transferStopId);
-                const destinationIndex2 = route2.stops.indexOf(destinationId);
+            commonStopIds.forEach(transferStopId => {
+                const transferStop = stops.find(s => s.id === transferStopId);
+                if (!transferStop) return;
 
-                if (transferIndex2 !== -1 && destinationIndex2 !== -1 && transferIndex2 < destinationIndex2) {
-                     // Check if a connecting route with this transfer stop already exists
-                    if (connectingRoutes.some(cr => cr.legs[0].endStop.id === transferStopId)) return;
+                const originIndexOnRoute1 = route1.stops.indexOf(originId);
+                const transferIndexOnRoute1 = route1.stops.indexOf(transferStopId);
+                
+                const transferIndexOnRoute2 = route2.stops.indexOf(transferStopId);
+                const destinationIndexOnRoute2 = route2.stops.indexOf(destinationId);
+
+                // Check if the path is valid: origin -> transfer -> destination
+                if (originIndexOnRoute1 < transferIndexOnRoute1 && transferIndexOnRoute2 < destinationIndexOnRoute2) {
+                    // Check if a connecting route with this transfer stop already exists to avoid duplicates
+                    if (connectingRoutes.some(cr => cr.legs[0].endStop.id === transferStopId && cr.legs[1].route.id === route2.id)) return;
 
                     const bus1 = buses.find(b => 
                         b.routeId === route1.id &&
-                        (b.currentStopIndex < originIndex1 || (b.currentStopIndex === originIndex1 && b.progress < 1))
+                        (b.currentStopIndex < originIndexOnRoute1 || (b.currentStopIndex === originIndexOnRoute1 && b.progress < 1))
                     );
                     const bus2 = buses.find(b => 
                         b.routeId === route2.id && 
-                        (b.currentStopIndex < transferIndex2 || (b.currentStopIndex === transferIndex2 && b.progress < 1))
+                        (b.currentStopIndex < transferIndexOnRoute2 || (b.currentStopIndex === transferIndexOnRoute2 && b.progress < 1))
                     );
 
                     if (bus1 && bus2) {
-                        const eta1 = Math.round(getDistance(bus1.position, originStop.position) / bus1.speed / 20) + ((route1.stops.indexOf(transferStopId) - originIndex1) * 2);
-                        const eta2 = Math.round(getDistance(bus2.position, transferStop.position) / bus2.speed / 20) + ((destinationIndex2 - transferIndex2) * 2) + 5; // Add transfer time
+                        const eta1 = Math.round(getDistance(bus1.position, originStop.position) / bus1.speed / 20) + ((transferIndexOnRoute1 - originIndexOnRoute1) * 2);
+                        const eta2 = Math.round(getDistance(bus2.position, transferStop.position) / bus2.speed / 20) + ((destinationIndexOnRoute2 - transferIndexOnRoute2) * 2) + 5; // Add transfer time
 
                         connectingRoutes.push({
                             type: 'connecting',
