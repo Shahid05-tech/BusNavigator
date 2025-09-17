@@ -48,16 +48,16 @@ export const stops: Stop[] = [
 ];
 
 export const routes: BusRoute[] = [
-  { id: 'route_9A', name: '9A Bajal - Statebank', stops: ['bajal', 'statebank', 'thandolige', 'muger', 'yekkur', 'pompwell', 'kankanady', 'jyothi', 'milagres', 'railway-station'] },
-  { id: 'route_9B', name: '9B Bajal - Statebank', stops: ['bajal', 'statebank', 'thandolige', 'muger', 'yekkur', 'pompwell', 'kankanady', 'jyothi', 'milagres', 'railway-station'] },
-  { id: 'route_11A_Rajkumar', name: '11A Statebank - Adyar', stops: ['statebank', 'adyar', 'signal', 'milagres', 'falnir', 'inland-hospi', 'kankanady', 'pompwell', 'padil', 'kannur', 'adyar-katte'] },
-  { id: 'route_11A_SK', name: '11A Statebank - Adyar', stops: ['statebank', 'adyar', 'signal', 'milagres', 'falnir', 'inland-hospi', 'kankanady', 'pompwell', 'padil', 'kannur', 'adyar-katte'] },
-  { id: 'route_Mahesh', name: 'Mahesh Statebank - Puttur', stops: ['statebank', 'puttur', 'signal', 'jyothi', 'kankanady', 'pompwell', 'padil', 'kannur', 'adyar', 'valachil', 'thumbe', 'parangipete-bc-road', 'kalladka', 'mani', 'kabaka', 'puttur'] },
-  { id: 'route_Celina', name: 'Celina Statebank - Puttur', stops: ['statebank', 'puttur', 'signal', 'jyothi', 'kankanady', 'pompwell', 'padil', 'kannur', 'adyar', 'valachil', 'thumbe', 'parangipete-bc-road', 'kalladka', 'mani', 'perne', 'uppinangad', 'puttur'] },
-  { id: 'route_42', name: '42 Statebank - Talapady', stops: ['statebank', 'talapady', 'signal', 'jyothi', 'kankanady', 'pompwell', 'ekkur', 'muger', 'kallapu', 'thokuttu', 'kapikad', 'kumpala', 'someshwar', 'talapady'] },
-  { id: 'route_44', name: '44 Statebank - Ullala', stops: ['statebank', 'ullala', 'signal', 'jyothi', 'kankanady', 'pompwell', 'ekkur', 'muger', 'kallapu', 'thokuttu', 'overbridge', 'abakka-circ', 'someshwar'] },
-  { id: 'route_15A', name: '15A Statebank - Surathkal', stops: ['statebank', 'surathkal', 'jyothi', 'kankanady', 'pompwell', 'padil', 'kannur', 'polali', 'kaikamba', 'bajpe', 'mulki', 'surathkal'] },
-  { id: 'route_16A', name: '16A Statebank - Kateel', stops: ['statebank', 'kateel', 'signal', 'milagres', 'falnir', 'kankanady', 'padil', 'kannur', 'polali', 'kateel'] },
+  { id: 'route_9A', name: '9A Bajal -> Statebank', stops: ['bajal', 'thandolige', 'muger', 'yekkur', 'pompwell', 'kankanady', 'jyothi', 'milagres', 'railway-station', 'statebank'] },
+  { id: 'route_9B', name: '9B Statebank -> Bajal', stops: [ 'statebank', 'railway-station', 'milagres', 'jyothi', 'kankanady', 'pompwell', 'yekkur', 'muger', 'thandolige', 'bajal'] },
+  { id: 'route_11A_Rajkumar', name: '11A Statebank -> Adyar', stops: ['statebank', 'jyothi', 'kankanady', 'pompwell', 'inland-hospi', 'falnir', 'signal', 'milagres', 'railway-station', 'adyar-katte', 'kannur', 'padil', 'adyar'] },
+  { id: 'route_11A_SK', name: '11A Adyar -> Statebank', stops: ['adyar', 'padil', 'kannur', 'adyar-katte', 'railway-station', 'milagres', 'signal', 'falnir', 'inland-hospi', 'pompwell', 'kankanady', 'jyothi', 'statebank' ] },
+  { id: 'route_Mahesh', name: 'Mahesh Statebank -> Puttur', stops: ['statebank', 'signal', 'jyothi', 'kankanady', 'pompwell', 'padil', 'kannur', 'adyar', 'valachil', 'thumbe', 'parangipete-bc-road', 'kalladka', 'mani', 'kabaka', 'puttur'] },
+  { id: 'route_Celina', name: 'Celina Statebank -> Puttur', stops: ['statebank', 'signal', 'jyothi', 'kankanady', 'pompwell', 'padil', 'kannur', 'adyar', 'valachil', 'thumbe', 'parangipete-bc-road', 'kalladka', 'mani', 'perne', 'uppinangad', 'puttur'] },
+  { id: 'route_42', name: '42 Statebank -> Talapady', stops: ['statebank', 'signal', 'jyothi', 'kankanady', 'pompwell', 'ekkur', 'muger', 'kallapu', 'thokuttu', 'kapikad', 'kumpala', 'someshwar', 'talapady'] },
+  { id: 'route_44', name: '44 Statebank -> Ullala', stops: ['statebank', 'signal', 'jyothi', 'kankanady', 'pompwell', 'ekkur', 'muger', 'kallapu', 'thokuttu', 'overbridge', 'abakka-circ', 'someshwar', 'ullala'] },
+  { id: 'route_15A', name: '15A Statebank -> Surathkal', stops: ['statebank', 'jyothi', 'kankanady', 'pompwell', 'padil', 'kannur', 'polali', 'kaikamba', 'bajpe', 'mulki', 'surathkal'] },
+  { id: 'route_16A', name: '16A Statebank -> Kateel', stops: ['statebank', 'signal', 'milagres', 'falnir', 'kankanady', 'padil', 'kannur', 'polali', 'kateel'] },
 ];
 
 export const initialBuses: Bus[] = [
