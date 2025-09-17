@@ -31,69 +31,90 @@ export function findSuggestedRoutes({
 
         if (originIndex !== -1 && destinationIndex !== -1 && originIndex < destinationIndex) {
             // Find the nearest bus on this route that hasn't passed the origin yet
-            const availableBuses = buses.filter(b => b.routeId === route.id && b.currentStopIndex <= originIndex);
+            const availableBuses = buses.filter(b => 
+                b.routeId === route.id && 
+                (b.currentStopIndex < originIndex || (b.currentStopIndex === originIndex && b.progress < 1))
+            );
             
             if (availableBuses.length > 0) {
-                let closestBus = availableBuses[0];
-                let minDistance = getDistance(closestBus.position, originStop.position);
+                let closestBus: Bus | null = null;
+                let minDistance = Infinity;
 
-                for(let i = 1; i < availableBuses.length; i++){
-                    const distance = getDistance(availableBuses[i].position, originStop.position);
-                    if(distance < minDistance){
+                availableBuses.forEach(bus => {
+                    const distance = getDistance(bus.position, originStop.position);
+                    if (distance < minDistance) {
                         minDistance = distance;
-                        closestBus = availableBuses[i];
+                        closestBus = bus;
                     }
-                }
-                
-                const eta = Math.round(minDistance / closestBus.speed / 5 + 5); // Simulated ETA logic
-
-                directRoutes.push({
-                    type: 'direct',
-                    legs: [{ route, startStop: originStop, endStop: destinationStop, bus: closestBus, eta }]
                 });
+                
+                if (closestBus) {
+                    const stopsBetween = destinationIndex - originIndex;
+                    const eta = Math.round(minDistance / closestBus.speed / 20) + (stopsBetween * 2);
+
+                    directRoutes.push({
+                        type: 'direct',
+                        legs: [{ route, startStop: originStop, endStop: destinationStop, bus: closestBus, eta }]
+                    });
+                }
             }
         }
     });
 
     // Find connecting routes (1 connection)
-    if (directRoutes.length === 0) {
-        routes.forEach(route1 => {
-            if (route1.stops.includes(originId)) {
-                route1.stops.forEach(transferStopId => {
-                    const transferStop = stops.find(s => s.id === transferStopId);
-                    if (!transferStop) return;
+    routes.forEach(route1 => {
+        const originIndex1 = route1.stops.indexOf(originId);
+        if (originIndex1 === -1) return;
 
-                    routes.forEach(route2 => {
-                        if (route1.id !== route2.id && route2.stops.includes(transferStopId) && route2.stops.includes(destinationId)) {
-                            const originIndex1 = route1.stops.indexOf(originId);
-                            const transferIndex1 = route1.stops.indexOf(transferStopId);
-                            const transferIndex2 = route2.stops.indexOf(transferStopId);
-                            const destinationIndex2 = route2.stops.indexOf(destinationId);
+        route1.stops.slice(originIndex1 + 1).forEach(transferStopId => {
+            const transferStop = stops.find(s => s.id === transferStopId);
+            if (!transferStop) return;
 
-                            if (originIndex1 < transferIndex1 && transferIndex2 < destinationIndex2) {
-                                const bus1 = buses.find(b => b.routeId === route1.id && b.currentStopIndex <= originIndex1);
-                                const bus2 = buses.find(b => b.routeId === route2.id && b.currentStopIndex <= transferIndex2);
+            routes.forEach(route2 => {
+                if (route1.id === route2.id) return;
 
-                                if (bus1 && bus2 && connectingRoutes.length < 1) { // Limit to one suggestion
-                                    const eta1 = Math.round(getDistance(bus1.position, originStop.position) / bus1.speed / 5 + 5);
-                                    const eta2 = Math.round(getDistance(bus2.position, transferStop.position) / bus2.speed / 5 + 10);
+                const transferIndex2 = route2.stops.indexOf(transferStopId);
+                const destinationIndex2 = route2.stops.indexOf(destinationId);
 
-                                    connectingRoutes.push({
-                                        type: 'connecting',
-                                        legs: [
-                                            { route: route1, startStop: originStop, endStop: transferStop, bus: bus1, eta: eta1 },
-                                            { route: route2, startStop: transferStop, endStop: destinationStop, bus: bus2, eta: eta2 }
-                                        ]
-                                    });
-                                }
-                            }
-                        }
-                    });
-                });
-            }
+                if (transferIndex2 !== -1 && destinationIndex2 !== -1 && transferIndex2 < destinationIndex2) {
+                     // Check if a connecting route with this transfer stop already exists
+                    if (connectingRoutes.some(cr => cr.legs[0].endStop.id === transferStopId)) return;
+
+                    const bus1 = buses.find(b => 
+                        b.routeId === route1.id &&
+                        (b.currentStopIndex < originIndex1 || (b.currentStopIndex === originIndex1 && b.progress < 1))
+                    );
+                    const bus2 = buses.find(b => 
+                        b.routeId === route2.id && 
+                        (b.currentStopIndex < transferIndex2 || (b.currentStopIndex === transferIndex2 && b.progress < 1))
+                    );
+
+                    if (bus1 && bus2) {
+                        const eta1 = Math.round(getDistance(bus1.position, originStop.position) / bus1.speed / 20) + ((route1.stops.indexOf(transferStopId) - originIndex1) * 2);
+                        const eta2 = Math.round(getDistance(bus2.position, transferStop.position) / bus2.speed / 20) + ((destinationIndex2 - transferIndex2) * 2) + 5; // Add transfer time
+
+                        connectingRoutes.push({
+                            type: 'connecting',
+                            legs: [
+                                { route: route1, startStop: originStop, endStop: transferStop, bus: bus1, eta: eta1 },
+                                { route: route2, startStop: transferStop, endStop: destinationStop, bus: bus2, eta: eta2 }
+                            ]
+                        });
+                    }
+                }
+            });
         });
-    }
+    });
     
-    // Return direct routes if any, otherwise the first connecting route found.
+    // Sort direct routes by ETA
+    directRoutes.sort((a, b) => a.legs[0].eta - b.legs[0].eta);
+
+    // Sort connecting routes by total ETA
+    connectingRoutes.sort((a, b) => {
+        const totalEtaA = a.legs.reduce((sum, leg) => sum + leg.eta, 0);
+        const totalEtaB = b.legs.reduce((sum, leg) => sum + leg.eta, 0);
+        return totalEtaA - totalEtaB;
+    });
+
     return [...directRoutes, ...connectingRoutes];
 }
