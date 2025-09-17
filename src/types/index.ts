@@ -13,6 +13,7 @@ export interface BusRoute {
 export interface Bus {
   id: string;
   routeId: string;
+  name: string;
   currentStopIndex: number;
   position: { lat: number; lng: number };
   // progress to next stop, 0 to 1
