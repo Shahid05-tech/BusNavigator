@@ -23,17 +23,12 @@ export function findSuggestedRoutes({
 
     const suggestedRoutes: SuggestedRoute[] = [];
 
-    // Find routes that contain both stops, regardless of order.
-    const relevantRoutes = routes.filter(route => 
-        route.stops.includes(originId) && route.stops.includes(destinationId)
-    );
-
-    relevantRoutes.forEach(route => {
+    // Find direct routes
+    routes.forEach(route => {
         const originIndex = route.stops.indexOf(originId);
         const destinationIndex = route.stops.indexOf(destinationId);
 
-        // This logic handles a simple direct trip in the order of the stops array.
-        if (originIndex < destinationIndex) {
+        if (originIndex > -1 && destinationIndex > -1 && originIndex < destinationIndex) {
             const availableBuses = buses.filter(bus => 
                 bus.routeId === route.id && bus.currentStopIndex <= originIndex
             );
@@ -46,7 +41,6 @@ export function findSuggestedRoutes({
                 });
                 
                 const stopsBetween = destinationIndex - originIndex;
-                // A very rough ETA calculation
                 const eta = 5 + (stopsBetween * 3) + Math.round( (originIndex - closestBus.currentStopIndex) * 3);
 
                 suggestedRoutes.push({
@@ -55,32 +49,65 @@ export function findSuggestedRoutes({
                 });
             }
         }
-        // This is a new logic to handle reverse direction
-        else if (destinationIndex < originIndex) {
-             const availableBuses = buses.filter(bus => 
-                bus.routeId === route.id && bus.currentStopIndex <= originIndex
-            );
-             if (availableBuses.length > 0) {
-                const closestBus = availableBuses.sort((a,b) => b.currentStopIndex - a.currentStopIndex)[0];
-                const stopsBetween = originIndex - destinationIndex;
-                const eta = 5 + (stopsBetween * 3);
-
-                 suggestedRoutes.push({
-                    type: 'direct',
-                    legs: [{ route, startStop: originStop, endStop: destinationStop, bus: closestBus, eta }]
-                });
-             }
-        }
     });
+
+    // Find connecting routes if no direct routes are found
+    if (suggestedRoutes.length === 0) {
+        const originRoutes = routes.filter(r => r.stops.includes(originId));
+        const destinationRoutes = routes.filter(r => r.stops.includes(destinationId));
+
+        for (const originRoute of originRoutes) {
+            for (const destinationRoute of destinationRoutes) {
+                if (originRoute.id === destinationRoute.id) continue;
+
+                const originStopIndex = originRoute.stops.indexOf(originId);
+                const transferStops = originRoute.stops.filter(stopId => destinationRoute.stops.includes(stopId));
+
+                for (const transferStopId of transferStops) {
+                    const transferStop = stops.find(s => s.id === transferStopId);
+                    if (!transferStop) continue;
+                    
+                    const transferStopIndexInOrigin = originRoute.stops.indexOf(transferStopId);
+                    const transferStopIndexInDest = destinationRoute.stops.indexOf(transferStopId);
+                    const destinationStopIndexInDest = destinationRoute.stops.indexOf(destinationId);
+
+                    if (originStopIndex < transferStopIndexInOrigin && transferStopIndexInDest < destinationStopIndexInDest) {
+                         const firstLegBuses = buses.filter(b => b.routeId === originRoute.id && b.currentStopIndex <= originStopIndex);
+                         const secondLegBuses = buses.filter(b => b.routeId === destinationRoute.id);
+
+                         if (firstLegBuses.length > 0 && secondLegBuses.length > 0) {
+                            const firstBus = firstLegBuses[0];
+                            const secondBus = secondLegBuses[0];
+
+                            const eta1 = 5 + ((transferStopIndexInOrigin - originStopIndex) * 3);
+                            const eta2 = 10 + ((destinationStopIndexInDest - transferStopIndexInDest) * 3); // 10 min for transfer
+
+                            suggestedRoutes.push({
+                                type: 'connecting',
+                                legs: [
+                                    { route: originRoute, startStop: originStop, endStop: transferStop, bus: firstBus, eta: eta1 },
+                                    { route: destinationRoute, startStop: transferStop, endStop: destinationStop, bus: secondBus, eta: eta2 }
+                                ]
+                            });
+                         }
+                    }
+                }
+            }
+        }
+    }
+
 
     // If no direct routes are found following the logic,
     // show any bus on a route that services both stops.
-    if (suggestedRoutes.length === 0 && relevantRoutes.length > 0) {
+    if (suggestedRoutes.length === 0) {
+        const relevantRoutes = routes.filter(route => 
+            route.stops.includes(originId) && route.stops.includes(destinationId)
+        );
         relevantRoutes.forEach(route => {
             const relevantBuses = buses.filter(bus => bus.routeId === route.id);
             relevantBuses.forEach(bus => {
                  // Avoid adding duplicates
-                if (suggestedRoutes.some(sr => sr.legs[0].bus.id === bus.id)) return;
+                if (suggestedRoutes.some(sr => sr.legs.some(leg => leg.bus.id === bus.id))) return;
 
                 suggestedRoutes.push({
                     type: 'direct',
@@ -99,13 +126,13 @@ export function findSuggestedRoutes({
 
     // Sort routes, putting direct routes with valid ETAs first.
     suggestedRoutes.sort((a, b) => {
-        const etaA = a.legs[0].eta;
-        const etaB = b.legs[0].eta;
+        const etaA = a.legs.reduce((acc, leg) => acc + leg.eta, 0);
+        const etaB = b.legs.reduce((acc, leg) => acc + leg.eta, 0);
 
-        if (etaA === -1 && etaB !== -1) return 1;
-        if (etaA !== -1 && etaB === -1) return -1;
-        if (etaA !== -1 && etaB !== -1) return etaA - etaB;
-        return 0; // if both are -1, keep original order
+        if (etaA < 0 && etaB >= 0) return 1;
+        if (etaA >= 0 && etaB < 0) return -1;
+        if (etaA >= 0 && etaB >= 0) return etaA - etaB;
+        return 0;
     });
 
     return suggestedRoutes;

@@ -21,8 +21,11 @@ export default function MapDisplay({
   stops,
   highlightedRoute,
 }: MapDisplayProps) {
-  const latMin = 0, latMax = 40;
-  const lngMin = 0, lngMax = 40;
+
+  const latMin = Math.min(...stops.map(s => s.position.lat));
+  const latMax = Math.max(...stops.map(s => s.position.lat));
+  const lngMin = Math.min(...stops.map(s => s.position.lng));
+  const lngMax = Math.max(...stops.map(s => s.position.lng));
 
   const scaleLat = (lat: number) => PADDING + ((lat - latMin) / (latMax - latMin)) * (MAP_HEIGHT - 2 * PADDING);
   const scaleLng = (lng: number) => PADDING + ((lng - lngMin) / (lngMax - lngMin)) * (MAP_WIDTH - 2 * PADDING);
