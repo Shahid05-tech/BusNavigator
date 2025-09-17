@@ -21,96 +21,92 @@ export function findSuggestedRoutes({
         return [];
     }
 
-    const directRoutes: SuggestedRoute[] = [];
-    const connectingRoutes: SuggestedRoute[] = [];
+    const suggestedRoutes: SuggestedRoute[] = [];
 
-    // Find direct routes, considering both directions
-    routes.forEach(route => {
+    // Find routes that contain both stops, regardless of order.
+    const relevantRoutes = routes.filter(route => 
+        route.stops.includes(originId) && route.stops.includes(destinationId)
+    );
+
+    relevantRoutes.forEach(route => {
         const originIndex = route.stops.indexOf(originId);
         const destinationIndex = route.stops.indexOf(destinationId);
 
-        if (originIndex !== -1 && destinationIndex !== -1) {
-            // This handles routes where the journey is in the defined stop order
-            if (originIndex < destinationIndex) {
-                const availableBuses = buses.filter(b => 
-                    b.routeId === route.id && 
-                    (b.currentStopIndex < originIndex || (b.currentStopIndex === originIndex && b.progress < 1))
-                );
+        // This logic handles a simple direct trip in the order of the stops array.
+        if (originIndex < destinationIndex) {
+            const availableBuses = buses.filter(bus => 
+                bus.routeId === route.id && bus.currentStopIndex <= originIndex
+            );
 
-                if (availableBuses.length > 0) {
-                    const closestBus = availableBuses.reduce((prev, curr) => {
-                        return getDistance(prev.position, originStop.position) < getDistance(curr.position, originStop.position) ? prev : curr;
-                    });
-                    
-                    const stopsBetween = destinationIndex - originIndex;
-                    const eta = Math.round(getDistance(closestBus.position, originStop.position) / closestBus.speed / 20) + (stopsBetween * 2);
+            if (availableBuses.length > 0) {
+                const closestBus = availableBuses.reduce((prev, curr) => {
+                    const prevDist = getDistance(prev.position, originStop.position) + (originIndex - prev.currentStopIndex) * 100;
+                    const currDist = getDistance(curr.position, originStop.position) + (originIndex - curr.currentStopIndex) * 100;
+                    return prevDist < currDist ? prev : curr;
+                });
+                
+                const stopsBetween = destinationIndex - originIndex;
+                // A very rough ETA calculation
+                const eta = 5 + (stopsBetween * 3) + Math.round( (originIndex - closestBus.currentStopIndex) * 3);
 
-                    directRoutes.push({
-                        type: 'direct',
-                        legs: [{ route, startStop: originStop, endStop: destinationStop, bus: closestBus, eta }]
-                    });
-                }
+                suggestedRoutes.push({
+                    type: 'direct',
+                    legs: [{ route, startStop: originStop, endStop: destinationStop, bus: closestBus, eta }]
+                });
             }
         }
+        // This is a new logic to handle reverse direction
+        else if (destinationIndex < originIndex) {
+             const availableBuses = buses.filter(bus => 
+                bus.routeId === route.id && bus.currentStopIndex <= originIndex
+            );
+             if (availableBuses.length > 0) {
+                const closestBus = availableBuses.sort((a,b) => b.currentStopIndex - a.currentStopIndex)[0];
+                const stopsBetween = originIndex - destinationIndex;
+                const eta = 5 + (stopsBetween * 3);
+
+                 suggestedRoutes.push({
+                    type: 'direct',
+                    legs: [{ route, startStop: originStop, endStop: destinationStop, bus: closestBus, eta }]
+                });
+             }
+        }
     });
-    
-    // Find connecting routes (1 connection)
-    routes.forEach(route1 => {
-        const originIndex1 = route1.stops.indexOf(originId);
-        if (originIndex1 === -1) return;
 
-        routes.forEach(route2 => {
-            if (route1.id === route2.id) return;
+    // If no direct routes are found following the logic,
+    // show any bus on a route that services both stops.
+    if (suggestedRoutes.length === 0 && relevantRoutes.length > 0) {
+        relevantRoutes.forEach(route => {
+            const relevantBuses = buses.filter(bus => bus.routeId === route.id);
+            relevantBuses.forEach(bus => {
+                 // Avoid adding duplicates
+                if (suggestedRoutes.some(sr => sr.legs[0].bus.id === bus.id)) return;
 
-            const commonStopIds = route1.stops.filter(stopId => route2.stops.includes(stopId));
-
-            commonStopIds.forEach(transferStopId => {
-                const transferStop = stops.find(s => s.id === transferStopId);
-                if (!transferStop) return;
-
-                const originIndexOnRoute1 = route1.stops.indexOf(originId);
-                const transferIndexOnRoute1 = route1.stops.indexOf(transferStopId);
-                
-                const transferIndexOnRoute2 = route2.stops.indexOf(transferStopId);
-                const destinationIndexOnRoute2 = route2.stops.indexOf(destinationId);
-
-                if (originIndexOnRoute1 < transferIndexOnRoute1 && transferIndexOnRoute2 < destinationIndexOnRoute2) {
-                     if (connectingRoutes.some(cr => cr.legs[0].endStop.id === transferStopId && cr.legs[1].route.id === route2.id)) return;
-
-                    const bus1 = buses.find(b => 
-                        b.routeId === route1.id &&
-                        (b.currentStopIndex < originIndexOnRoute1 || (b.currentStopIndex === originIndexOnRoute1 && b.progress < 1))
-                    );
-                    const bus2 = buses.find(b => 
-                        b.routeId === route2.id && 
-                        (b.currentStopIndex < transferIndexOnRoute2 || (b.currentStopIndex === transferIndexOnRoute2 && b.progress < 1))
-                    );
-                    
-                    if (bus1 && bus2) {
-                        const eta1 = Math.round(getDistance(bus1.position, originStop.position) / bus1.speed / 20) + ((transferIndexOnRoute1 - originIndexOnRoute1) * 2);
-                        const eta2 = Math.round(getDistance(bus2.position, transferStop.position) / bus2.speed / 20) + ((destinationIndexOnRoute2 - transferIndexOnRoute2) * 2) + 5;
-
-                        connectingRoutes.push({
-                            type: 'connecting',
-                            legs: [
-                                { route: route1, startStop: originStop, endStop: transferStop, bus: bus1, eta: eta1 },
-                                { route: route2, startStop: transferStop, endStop: destinationStop, bus: bus2, eta: eta2 }
-                            ]
-                        });
-                    }
-                }
+                suggestedRoutes.push({
+                    type: 'direct',
+                    legs: [{
+                        route: route,
+                        startStop: originStop,
+                        endStop: destinationStop,
+                        bus: bus,
+                        eta: -1 // Indicates no direct path ETA
+                    }]
+                });
             });
         });
+    }
+
+
+    // Sort routes, putting direct routes with valid ETAs first.
+    suggestedRoutes.sort((a, b) => {
+        const etaA = a.legs[0].eta;
+        const etaB = b.legs[0].eta;
+
+        if (etaA === -1 && etaB !== -1) return 1;
+        if (etaA !== -1 && etaB === -1) return -1;
+        if (etaA !== -1 && etaB !== -1) return etaA - etaB;
+        return 0; // if both are -1, keep original order
     });
 
-    const allSuggestedRoutes = [...directRoutes, ...connectingRoutes];
-
-    // Sort all routes by total ETA
-    allSuggestedRoutes.sort((a, b) => {
-        const totalEtaA = a.legs.reduce((sum, leg) => sum + leg.eta, 0);
-        const totalEtaB = b.legs.reduce((sum, leg) => sum + leg.eta, 0);
-        return totalEtaA - totalEtaB;
-    });
-
-    return allSuggestedRoutes;
+    return suggestedRoutes;
 }

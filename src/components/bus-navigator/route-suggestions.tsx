@@ -4,7 +4,7 @@ import type { SuggestedRoute } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Bus, MoreVertical, Route, Clock, AlertCircle, ArrowRight } from "lucide-react";
+import { Bus, MoreVertical, Route, Clock, AlertCircle, ArrowRight, Info } from "lucide-react";
 import DisruptionHandler from "./disruption-handler";
 
 interface RouteSuggestionsProps {
@@ -67,13 +67,19 @@ export default function RouteSuggestions({ suggestedRoutes, isFinding, onHoverRo
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-2 font-semibold text-primary">
                                         <Bus size={20}/>
-                                        <span className="font-headline">Direct Route</span>
+                                        <span className="font-headline">{sRoute.legs[0].bus.name}</span>
                                     </div>
-                                    <span className="text-sm font-bold text-accent">{sRoute.legs[0].eta} min</span>
+                                    {sRoute.legs[0].eta > 0 &&
+                                        <span className="text-sm font-bold text-accent">{sRoute.legs[0].eta} min</span>
+                                    }
                                 </div>
                                 <div className="text-sm space-y-1">
                                     <p className="flex items-center gap-2"><Route size={16} className="text-muted-foreground"/> {sRoute.legs[0].route.name}</p>
-                                    <p className="flex items-center gap-2"><Clock size={16} className="text-muted-foreground"/> Arrives in ~{sRoute.legs[0].eta} min</p>
+                                    {sRoute.legs[0].eta > 0 ? (
+                                        <p className="flex items-center gap-2"><Clock size={16} className="text-muted-foreground"/> Arrives in ~{sRoute.legs[0].eta} min</p>
+                                    ) : (
+                                        <p className="flex items-center gap-2 text-muted-foreground"><Info size={16}/> On route, no direct ETA</p>
+                                    )}
                                 </div>
                                 <DisruptionHandler
                                     currentLocation={sRoute.legs[0].startStop.name}
