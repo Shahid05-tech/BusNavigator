@@ -1,12 +1,17 @@
 "use client";
 
 import type { Stop } from "@/types";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Waypoints, LoaderCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface RouteFinderProps {
   origin: string;
@@ -17,76 +22,6 @@ interface RouteFinderProps {
   isFinding: boolean;
   stops: Stop[];
 }
-
-const AutocompleteInput = ({
-  value,
-  setValue,
-  id,
-  placeholder,
-  stops,
-}: {
-  value: string;
-  setValue: (id: string) => void;
-  id: string;
-  placeholder: string;
-  stops: Stop[];
-}) => {
-  const [inputValue, setInputValue] = useState("");
-  const [suggestions, setSuggestions] = useState<Stop[]>([]);
-  const [isFocused, setIsFocused] = useState(false);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const text = e.target.value;
-    setInputValue(text);
-    if (text.length > 1) {
-      setSuggestions(
-        stops.filter((stop) =>
-          stop.name.toLowerCase().includes(text.toLowerCase())
-        )
-      );
-    } else {
-      setSuggestions([]);
-    }
-  };
-
-  const selectStop = (stop: Stop) => {
-    setValue(stop.id);
-    setInputValue(stop.name);
-    setSuggestions([]);
-    setIsFocused(false);
-  };
-  
-  const currentStopName = stops.find(s => s.id === value)?.name || inputValue;
-
-  return (
-    <div className="relative">
-      <Input
-        id={id}
-        placeholder={placeholder}
-        value={currentStopName}
-        onChange={handleInputChange}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-        className="bg-background"
-        autoComplete="off"
-      />
-      {isFocused && suggestions.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-card border rounded-md shadow-lg max-h-48 overflow-y-auto">
-          {suggestions.map((stop) => (
-            <div
-              key={stop.id}
-              className="px-4 py-2 cursor-pointer hover:bg-secondary"
-              onMouseDown={() => selectStop(stop)}
-            >
-              {stop.name}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
 
 export default function RouteFinder({
   origin,
@@ -108,23 +43,29 @@ export default function RouteFinder({
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="origin">From</Label>
-          <AutocompleteInput
-            id="origin"
-            value={origin}
-            setValue={setOrigin}
-            placeholder="e.g., Central Station"
-            stops={stops}
-          />
+          <Select onValueChange={setOrigin} value={origin}>
+            <SelectTrigger id="origin" className="w-full">
+              <SelectValue placeholder="Select a starting point" />
+            </SelectTrigger>
+            <SelectContent>
+              {stops.map(stop => (
+                <SelectItem key={stop.id} value={stop.id}>{stop.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="destination">To</Label>
-          <AutocompleteInput
-            id="destination"
-            value={destination}
-            setValue={setDestination}
-            placeholder="e.g., Westside Mall"
-            stops={stops}
-          />
+           <Select onValueChange={setDestination} value={destination}>
+            <SelectTrigger id="destination" className="w-full">
+              <SelectValue placeholder="Select a destination" />
+            </SelectTrigger>
+            <SelectContent>
+              {stops.map(stop => (
+                <SelectItem key={stop.id} value={stop.id}>{stop.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <Button
           onClick={onFindRoutes}
