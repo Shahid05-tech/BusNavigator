@@ -11,8 +11,6 @@ interface MapDisplayProps {
   highlightedRoute: string | null;
 }
 
-const MAP_WIDTH = 1000;
-const MAP_HEIGHT = 1000;
 const PADDING = 50;
 
 export default function MapDisplay({
@@ -21,22 +19,39 @@ export default function MapDisplay({
   stops,
   highlightedRoute,
 }: MapDisplayProps) {
+  if (stops.length === 0) {
+    return (
+      <div className="w-full h-full bg-secondary/30 flex items-center justify-center">
+        <p>No stops to display.</p>
+      </div>
+    );
+  }
 
   const latMin = Math.min(...stops.map(s => s.position.lat));
   const latMax = Math.max(...stops.map(s => s.position.lat));
   const lngMin = Math.min(...stops.map(s => s.position.lng));
   const lngMax = Math.max(...stops.map(s => s.position.lng));
 
-  const scaleLat = (lat: number) => PADDING + ((lat - latMin) / (latMax - latMin)) * (MAP_HEIGHT - 2 * PADDING);
-  const scaleLng = (lng: number) => PADDING + ((lng - lngMin) / (lngMax - lngMin)) * (MAP_WIDTH - 2 * PADDING);
+  const mapWidth = lngMax - lngMin > 0 ? 1000 : 2 * PADDING;
+  const mapHeight = latMax - latMin > 0 ? 1000 : 2 * PADDING;
+
+  const scaleLat = (lat: number) => {
+    if (latMax === latMin) return mapHeight / 2;
+    return PADDING + ((lat - latMin) / (latMax - latMin)) * (mapHeight - 2 * PADDING);
+  };
+  
+  const scaleLng = (lng: number) => {
+    if (lngMax === lngMin) return mapWidth / 2;
+    return PADDING + ((lng - lngMin) / (lngMax - lngMin)) * (mapWidth - 2 * PADDING);
+  };
 
   return (
     <div className="w-full h-full bg-secondary/30 relative overflow-hidden flex items-center justify-center">
       <svg
-        viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
+        viewBox={`0 0 ${mapWidth} ${mapHeight}`}
         className="w-full h-full"
       >
-        <rect width={MAP_WIDTH} height={MAP_HEIGHT} fill="transparent" />
+        <rect width={mapWidth} height={mapHeight} fill="transparent" />
 
         {/* Draw routes */}
         {routes.map((route) => {
