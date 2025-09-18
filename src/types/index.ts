@@ -2,6 +2,7 @@ export interface Stop {
   id: string;
   name: string;
   position: { lat: number; lng: number };
+  realPosition: { lat: number; lng: number };
 }
 
 export interface BusRoute {

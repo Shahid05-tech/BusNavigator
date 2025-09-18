@@ -59,7 +59,7 @@ export default function RouteFinder({
         let minDistance = Infinity;
 
         stops.forEach((stop) => {
-          const distance = getDistance(userPosition, stop.position);
+          const distance = getDistance(userPosition, stop.realPosition);
           if (distance < minDistance) {
             minDistance = distance;
             closestStop = stop;
