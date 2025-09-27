@@ -5,6 +5,9 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Bus Navigator',
   description: 'Your real-time local bus tracking companion.',
+  icons: {
+    icon: 'data:;base64,iVBORw0KGgo=',
+  }
 };
 
 export default function RootLayout({
