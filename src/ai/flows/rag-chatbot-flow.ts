@@ -138,12 +138,15 @@ const ragChatbotFlow = ai.defineFlow(
     // 2. Generation: Pass the query and context to the LLM.
     const response = await ragChatbotPrompt({ query, context });
     
-    // Check if the model decided to use a tool
-    const toolResponse = response.toolRequest?.content();
+    // Check if the model decided to use a tool and extract the result
+    const toolResponse = response.toolRequest?.output();
     if(toolResponse) {
-       return { answer: toolResponse };
+       // If the tool returns a string, use it. If it returns an object, stringify it.
+       const answer = typeof toolResponse === 'string' ? toolResponse : JSON.stringify(toolResponse);
+       return { answer: answer };
     }
 
+    // If no tool was used, return the direct text output
     return response.output!;
   }
 );
