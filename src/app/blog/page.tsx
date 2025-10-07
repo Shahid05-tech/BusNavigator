@@ -13,6 +13,13 @@ interface Message {
   text: string;
 }
 
+const suggestedQuestions = [
+    "How do I get to Kankanady from Statebank?",
+    "Tell me something interesting about Surathkal.",
+    "How does AI re-routing work?",
+];
+
+
 export default function BlogPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -22,17 +29,19 @@ export default function BlogPage() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
 
-  const handleSendMessage = async () => {
-    if (!input.trim()) return;
+  const handleSendMessage = async (messageText: string) => {
+    if (!messageText.trim()) return;
 
-    const userMessage: Message = { sender: "user", text: input };
+    setShowSuggestions(false);
+    const userMessage: Message = { sender: "user", text: messageText };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
-      const botResponse = await askBlogChatbot(input);
+      const botResponse = await askBlogChatbot(messageText);
       const botMessage: Message = { sender: "bot", text: botResponse };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
@@ -90,17 +99,37 @@ export default function BlogPage() {
                          </div>
                      </div>
                  )}
+                 {showSuggestions && !isLoading && (
+                    <div className="flex items-start gap-3">
+                        <Avatar className="w-8 h-8 border-2 border-primary/50">
+                            <AvatarFallback>AI</AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col gap-2 pt-1">
+                            {suggestedQuestions.map((q, i) => (
+                                <Button
+                                    key={i}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-auto whitespace-normal text-left justify-start"
+                                    onClick={() => handleSendMessage(q)}
+                                >
+                                    {q}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                )}
              </CardContent>
              <div className="p-4 border-t">
                  <div className="flex gap-2">
                      <Input
                          value={input}
                          onChange={(e) => setInput(e.target.value)}
-                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(input)}
                          placeholder="Ask 'How do I get to Kankanady?'"
                          disabled={isLoading}
                      />
-                     <Button onClick={handleSendMessage} disabled={isLoading}>
+                     <Button onClick={() => handleSendMessage(input)} disabled={isLoading}>
                          <Send className="w-4 h-4"/>
                      </Button>
                  </div>
