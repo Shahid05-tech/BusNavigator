@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Bus, MoreVertical, Route, Clock, AlertCircle, ArrowRight, Info } from "lucide-react";
 import DisruptionHandler from "./disruption-handler";
-import PlaceInfo from "./place-info";
+
 
 interface RouteSuggestionsProps {
     suggestedRoutes: SuggestedRoute[];
@@ -87,7 +87,6 @@ export default function RouteSuggestions({ suggestedRoutes, isFinding, onHoverRo
                                     destination={sRoute.legs[0].endStop.name}
                                     plannedRoute={sRoute.legs[0].route.name}
                                 />
-                                <PlaceInfo placeName={sRoute.legs[sRoute.legs.length -1].endStop.name} />
                             </div>
                         )}
                         {sRoute.type === 'connecting' && (
@@ -119,7 +118,6 @@ export default function RouteSuggestions({ suggestedRoutes, isFinding, onHoverRo
                                         )}
                                     </div>
                                 ))}
-                                <PlaceInfo placeName={sRoute.legs[sRoute.legs.length -1].endStop.name} />
                             </div>
                         )}
                     </div>
