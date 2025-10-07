@@ -16,6 +16,7 @@ interface Message {
 const suggestedQuestions = [
     "How do I get to Kankanady from Statebank?",
     "Tell me something interesting about Surathkal.",
+    "What are some interesting places to visit?",
     "How does AI re-routing work?",
 ];
 
@@ -85,7 +86,7 @@ export default function BlogPage() {
                              </Avatar>
                          )}
                          <div className={`rounded-lg px-4 py-2 max-w-sm ${message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                           <p className="text-sm">{message.text}</p>
+                           <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                          </div>
                      </div>
                  ))}
@@ -126,7 +127,7 @@ export default function BlogPage() {
                          value={input}
                          onChange={(e) => setInput(e.target.value)}
                          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(input)}
-                         placeholder="Ask 'How do I get to Kankanady?'"
+                         placeholder="Ask 'What are some places to visit?'"
                          disabled={isLoading}
                      />
                      <Button onClick={() => handleSendMessage(input)} disabled={isLoading}>

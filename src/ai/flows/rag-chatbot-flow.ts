@@ -34,6 +34,22 @@ const getPlaceInfoTool = ai.defineTool(
   }
 );
 
+// Define the tool for suggesting places to visit
+const suggestPlacesToVisitTool = ai.defineTool(
+  {
+    name: "suggestPlacesToVisit",
+    description: "Suggests interesting places to visit, attractions, or things to do in or around Mangalore, India. Use this when the user asks for recommendations on what to see or do.",
+    inputSchema: z.object({}), // No specific input needed from the user's prompt
+    outputSchema: z.string().describe("A friendly and helpful list of 3-4 suggested places to visit, with a brief, exciting description for each."),
+  },
+  async () => {
+    const prompt = `You are a friendly and knowledgeable local tour guide for Mangalore, India. A user has asked for suggestions on what to see. Recommend 3-4 interesting and popular places to visit (like beaches, temples, or viewpoints). For each place, write a short, one-sentence description to get them excited. Format it as a simple list.`;
+    const { text } = await ai.generate({ prompt });
+    return text;
+  }
+);
+
+
 // Define the tool for finding bus routes
 const findBusRouteTool = ai.defineTool(
   {
@@ -104,15 +120,16 @@ const ragChatbotPrompt = ai.definePrompt({
   },
   output: { schema: ChatbotOutputSchema },
   // Give the model tools to use
-  tools: [getPlaceInfoTool, findBusRouteTool],
+  tools: [getPlaceInfoTool, findBusRouteTool, suggestPlacesToVisitTool],
   prompt: `You are a helpful and friendly chatbot for the Bus Navigator app.
 Your goal is to answer the user's question based on the tools and context provided.
 
 1.  **Bus Routes:** If the user asks about bus timings, how to get somewhere, or for the next bus, use the 'findBusRoute' tool. Extract the origin and destination from their question.
-2.  **Place Information:** If the user asks about a specific place, landmark, or location, use the 'getPlaceInfo' tool to get information.
-3.  **Blog Content:** For all other questions (like features of the Bus Navigator app, blog content, etc.), answer based *only* on the CONTEXT provided below.
-4.  **Clarity:** If you don't have enough information to use a tool (e.g., you need both an origin and a destination for a route search), ask the user for the missing information.
-5.  **Limitations:** Do not make up information. If the answer is not in the context and no tool is appropriate, politely say that you cannot find the answer.
+2.  **Specific Place Information:** If the user asks about a *specific* place, landmark, or location, use the 'getPlaceInfo' tool to get information.
+3.  **Suggest Places:** If the user asks for suggestions on places to visit or things to do, use the 'suggestPlacesToVisit' tool.
+4.  **Blog Content:** For all other questions (like features of the Bus Navigator app, blog content, etc.), answer based *only* on the CONTEXT provided below.
+5.  **Clarity:** If you don't have enough information to use a tool (e.g., you need both an origin and a destination for a route search), ask the user for the missing information.
+6.  **Limitations:** Do not make up information. If the answer is not in the context and no tool is appropriate, politely say that you cannot find the answer.
 
 CONTEXT:
 {{{context}}}
@@ -139,11 +156,11 @@ const ragChatbotFlow = ai.defineFlow(
     const response = await ragChatbotPrompt({ query, context });
     
     // Check if the model decided to use a tool and extract the result
-    const toolResponse = response.toolRequest?.output();
+    const toolResponse = await response.toolRequest?.output();
     if(toolResponse) {
        // If the tool returns a string, use it. If it returns an object, stringify it.
-       const answer = typeof toolResponse === 'string' ? toolResponse : JSON.stringify(toolResponse);
-       return { answer: answer };
+       const answer = typeof toolResponse === 'string' ? toolResponse : JSON.stringify(toolResponse, null, 2);
+       return { answer };
     }
 
     // If no tool was used, return the direct text output
