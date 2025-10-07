@@ -9,6 +9,7 @@ import Header from "@/components/bus-navigator/header";
 import RouteFinder from "@/components/bus-navigator/route-finder";
 import MapDisplay from "@/components/bus-navigator/map-display";
 import RouteSuggestions from "@/components/bus-navigator/route-suggestions";
+import AiFab from "@/components/bus-navigator/ai-fab";
 
 export default function Home() {
   const [buses, setBuses] = useState<Bus[]>(initialBuses);
@@ -112,6 +113,7 @@ export default function Home() {
           />
         </div>
       </main>
+      <AiFab />
     </div>
   );
 }

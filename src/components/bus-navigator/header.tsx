@@ -1,6 +1,5 @@
-import { Bus, Sparkles } from 'lucide-react';
+import { Bus } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 
 export default function Header() {
   return (
@@ -11,13 +10,6 @@ export default function Header() {
           Bus Navigator
         </h1>
       </Link>
-      <nav>
-        <Button asChild variant="ghost" size="icon" aria-label="AI Assistant">
-          <Link href="/blog">
-            <Sparkles className="h-6 w-6 text-primary" />
-          </Link>
-        </Button>
-      </nav>
     </header>
   );
 }
